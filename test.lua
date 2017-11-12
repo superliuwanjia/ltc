@@ -1,9 +1,13 @@
 testLogger = optim.Logger(paths.concat(opt.save, opt.testDir .. '.log'))
+require 'paths'
 
 local batchNumber
 local acc, loss
 local timer = torch.Timer()
-
+local rep_layer = {}
+--local rep_layer = {3,6,9,12,15,19,22,24}
+local tag = ""
+local save=0
 function test()
 	local optimState 
 	batchNumber = 0
@@ -14,10 +18,20 @@ function test()
 	model:evaluate()
 	if(opt.crops10) then nDiv = 10 else nDiv = 1 end
 	local N = nTest/torch.floor(opt.batchSize/nDiv) -- nTest is set in data.lua
-
+    print("N is ..", N)
+    print("nTest is ..", nTest)
 	if(opt.evaluate) then
 		print('==> testing final predictions')
 		clipScores = torch.Tensor(N, nClasses)
+        if save==1 then
+            clipTrueLabel = torch.Tensor(N, 1)
+            clipPredLabel = torch.Tensor(N, 1)
+            act = {}
+            for k, v in pairs(rep_layer) do
+                act[v]  = {}
+            end
+        end
+
 	else
 		optimState = torch.load(paths.concat(opt.save, 'optimState_' .. epoch .. '.t7'))
 		print('==> validation epoch # ' .. epoch)
@@ -38,10 +52,10 @@ function test()
 		testBatch
 		)
 	end
-
+    
 	donkeys:synchronize()
 	cutorch.synchronize()
-
+    print("-----------")
 	acc  = acc * 100 / nTest
 	loss = loss / (nTest/torch.floor(opt.batchSize/nDiv)) -- because loss is calculated per batch
 
@@ -69,6 +83,13 @@ function test()
 		}
 		print(string.format('[TESTING SUMMARY] Total Time(s): %.2f \t Loss: %.2f \t Clip Acc: %.2f \t Video Acc: %.2f\n',
 			timer:time().real, loss, acc, videoAcc))
+        if save==1 then
+            dir=paths.concat(opt.logRoot, opt.dataset, opt.expName)
+            torch.save(paths.concat(dir,tag..'trueLabel.t7'), clipTrueLabel)
+            torch.save(paths.concat(dir,tag..'predLabel.t7'), clipPredLabel)
+            torch.save(paths.concat(dir,tag..'activation.t7'), act)
+            torch.save(paths.concat(dir,tag..'score.t7'), clipScores)
+        end
 	end
 end -- of test()
 -----------------------------------------------------------------------------
@@ -107,7 +128,6 @@ function testBatch(inputsCPU, labelsCPU, indicesCPU)
 
    	local scoresCPU = outputs:float() -- N x 101
   	local gt, pred
-
 	local _, scores_sorted = scoresCPU:sort(2, true)
 	for i=1,scoresCPU:size(1) do
 		gt = labelsCPU[i]                    -- ground truth class
@@ -116,6 +136,14 @@ function testBatch(inputsCPU, labelsCPU, indicesCPU)
 
 		if(opt.evaluate) then
 		    clipScores[indicesCPU[i]] = scoresCPU[i]
+            if save == 1 then
+                clipTrueLabel[indicesCPU[i]] = labelsCPU[i]
+                clipPredLabel[indicesCPU[i]] = pred
+                for k, v in pairs(rep_layer) do
+                    act[v][indicesCPU[i]] = model.modules[v].output
+                end
+            end
+
 		end
 	end
 

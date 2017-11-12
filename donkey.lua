@@ -23,6 +23,7 @@ local function getInterval(chunkNo)
 	return (chunkNo - 1)*opt.slide + 1
 end
 
+local flag = 1
 -- Load a sequence of rgb images
 local function loadRGB(path, set)
 	local _className = paths.basename(paths.dirname(path))
@@ -51,7 +52,6 @@ local function loadRGB(path, set)
 			t_beg = N - loadSize[2] + 1
 		end
 	end
-
 	local nPad = 0
 	if(N < loadSize[2] or t_beg <= 0) then -- Not enough frames
 		nPad = loadSize[2] - N
@@ -66,7 +66,21 @@ local function loadRGB(path, set)
 	-- Read/process frames
 	for tt = t_beg,t_end - nPad do
 		img = image.decompressJPG(video[tt]:byte())-- [0, 1]
-		input[{{}, {tt - t_beg + 1}, {}, {}}] = image.scale(img, loadSize[4], loadSize[3]):float():mul(opt.coeff)
+        prev = tt - 1
+        if prev < 1 then
+            prev = 1
+        end
+        prev_img = image.decompressJPG(video[prev]:byte())
+        if opt.gray then
+            img = image.rgb2y(img)
+            prev_img = image.rgb2y(prev_img)
+        end
+        if opt.stream == "diff" then
+		input[{{}, {tt - t_beg + 1}, {}, {}}] = image.scale(img, loadSize[4], loadSize[3]):float():mul(opt.coeff) - image.scale(prev_img, loadSize[4], loadSize[3]):float():mul(opt.coeff)
+        else
+
+		    input[{{}, {tt - t_beg + 1}, {}, {}}] = image.scale(img, loadSize[4], loadSize[3]):float():mul(opt.coeff)
+        end
 	end
    
 	if(nPad > 0) then
@@ -93,7 +107,6 @@ end
 local function loadFlow(path, set)
 	local _className = paths.basename(paths.dirname(path))
 	local _videoName = paths.basename(path)
-
 	local matched = _videoName:match('.avi_%d%d%d%d')
 	local video, minmaxfile
 	if(matched) then
@@ -145,22 +158,33 @@ local function loadFlow(path, set)
 
 	-- Allocate memory
 	local input = torch.FloatTensor(loadSize[1], loadSize[2], loadSize[3], loadSize[4])
-   
+    local flag_inf = 1   
 	-- Read/process frames
 	for tt = t_beg,t_end - nPad do
 		imgx = image.decompressJPG(video.x[tt]:byte())
 		imgy = image.decompressJPG(video.y[tt]:byte())
 		local iH = imgx:size(2)
 		local iW = imgx:size(3)
-		imgx = image.scale(imgx, loadSize[4], loadSize[3])
+    	imgx = image.scale(imgx, loadSize[4], loadSize[3])
 		imgy = image.scale(imgy, loadSize[4], loadSize[3])
 		local T = tt - t_beg + 1
 
+        if flag < 100 and flag_inf == 1 then
+            --image.save(string.format('%05d_x.jpg', flag),imgx )
+            --image.save(string.format('%05d_y.jpg', flag),imgy )
+            --flag = flag + 1
+            --flag_inf = 2
+        end
 		-- to-do: if not minmax will be always nil
 		if(opt.minmax) then
 			input[{{1}, {T}, {}, {}}] = (torch.mul(imgx, minmax[{tt, 2}] - minmax[{tt, 1}]) + minmax[{tt, 1}]):mul(opt.coeff*loadSize[4]/iW)
 			input[{{2}, {T}, {}, {}}] = (torch.mul(imgy, minmax[{tt, 4}] - minmax[{tt, 3}]) + minmax[{tt, 3}]):mul(opt.coeff*loadSize[3]/iH)
-		end
+		else
+		    input[{{1}, {T}, {}, {}}] = imgx:float():mul(opt.coeff)
+		    input[{{2}, {T}, {}, {}}] = imgy:float():mul(opt.coeff)
+        end
+
+
 
 		if(opt.perframemean) then
 			input[{{1}, {T}, {}, {}}] = input[{{1}, {T}, {}, {}}] - torch.mean(input[{{1}, {T}, {}, {}}]);

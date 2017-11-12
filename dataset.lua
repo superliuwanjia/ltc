@@ -67,6 +67,13 @@ local initcheck = argcheck{
     help="applied to sample during testing",
     opt = true},
 }
+function tableFind(t, o) 
+   for k,v in pairs(t) do
+      if v == o then 
+         return k 
+      end 
+   end 
+end
 
 function dataset:__init(...)
 
@@ -87,11 +94,13 @@ function dataset:__init(...)
          classPaths[k] = {}
       end
    end
-   local function tableFind(t, o) for k,v in pairs(t) do if v == o then return k end end end
+   print(".........")
    -- loop over each paths folder, get list of unique class names,
    -- also store the directory paths per class
    -- for each class,
    for k,path in ipairs(self.paths) do
+      print(k)
+      print(path)
       local dirs = dir.getdirectories(path);
       for k,dirpath in ipairs(dirs) do
          local class = paths.basename(dirpath)
@@ -106,7 +115,7 @@ function dataset:__init(...)
          end
       end
    end
-
+ 
    self.classIndices = {}
    for k,v in ipairs(self.classes) do
       self.classIndices[v] = k
@@ -142,6 +151,8 @@ function dataset:__init(...)
    local classFindFiles = {}
    for i=1,#self.classes do
       classFindFiles[i] = os.tmpname()
+      --print(self.classes[i])
+      --print(classFindFiles[i])
    end
    local combinedFindList = os.tmpname();
 
@@ -159,7 +170,13 @@ function dataset:__init(...)
    io.close(tmphandle)
    os.execute('bash ' .. tmpfile)
    os.execute('rm -f ' .. tmpfile)
-
+   for i=1,#self.classes do
+      local length = tonumber(sys.fexecute(wc .. " -l '"
+                                              .. classFindFiles[i] .. "' |"
+                                              .. cut .. " -f1 -d' '"))
+      --print(self.classes[i])
+      --print(length)
+    end 
    print('now combine all the files to a single large file')
    local tmpfile = os.tmpname()
    local tmphandle = assert(io.open(tmpfile, 'w'))
@@ -206,6 +223,7 @@ function dataset:__init(...)
                                               .. classFindFiles[i] .. "' |"
                                               .. cut .. " -f1 -d' '"))
       if length == 0 then
+         print(classFindFiles[i])
          error('Class has zero samples')
       else
          self.classList[i] = torch.linspace(runningIndex + 1, runningIndex + length, length):long()

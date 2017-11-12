@@ -14,7 +14,9 @@ opt = opts.parse(arg)
 
 local nChannels
 if(opt.stream == 'flow')    then opt.mean =  0; nChannels = 2
-elseif(opt.stream == 'rgb') then opt.mean = 96; nChannels = 3; opt.coeff = 255 end
+elseif(opt.stream == 'rgb') then opt.mean = 0; nChannels = 1; opt.coeff = 255 end
+if (opt.stream == "diff") then opt.mean = 0; nChannels=3 end
+if (opt.gray) then nChannels=1 end
 
 opt.save  			= paths.concat(opt.logRoot, opt.dataset, opt.expName)
 opt.cache 			= paths.concat(opt.logRoot, opt.dataset, 'cache', opt.stream)
@@ -29,10 +31,11 @@ paths.dofile(opt.LRfile)
 -- Testing final predictions
 if(opt.evaluate) then
 	opt.save  		 = paths.concat(opt.logRoot, opt.dataset, opt.expName, 'test_' .. opt.modelNo .. '_slide' .. opt.slide)
-	opt.cache 		 = paths.concat(opt.logRoot, opt.dataset, 'cache', 'test', opt.stream)
+	opt.cache 		 = paths.concat(opt.logRoot, opt.dataset, 'cache', 'test_4', opt.stream)
 	opt.scales 		 = false
 	opt.crops10 	 = true
-	opt.testDir 	 = 'test_' .. opt.loadSize[2] .. '_' .. opt.slide
+	--opt.testDir 	 = 'test_' .. opt.loadSize[2] .. '_' .. opt.slide
+	opt.testDir 	 = 'test_4'
 	opt.retrain 	 = paths.concat(opt.logRoot, opt.dataset, opt.expName, 'model_' .. opt.modelNo .. '.t7')
 	opt.finetune 	 = 'none'
 end
