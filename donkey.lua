@@ -76,9 +76,8 @@ local function loadRGB(path, set)
             prev_img = image.rgb2y(prev_img)
         end
         if opt.stream == "diff" then
-		input[{{}, {tt - t_beg + 1}, {}, {}}] = image.scale(img, loadSize[4], loadSize[3]):float():mul(opt.coeff) - image.scale(prev_img, loadSize[4], loadSize[3]):float():mul(opt.coeff)
+		    input[{{}, {tt - t_beg + 1}, {}, {}}] = image.scale(img, loadSize[4], loadSize[3]):float():mul(opt.coeff) - image.scale(prev_img, loadSize[4], loadSize[3]):float():mul(opt.coeff)
         else
-
 		    input[{{}, {tt - t_beg + 1}, {}, {}}] = image.scale(img, loadSize[4], loadSize[3]):float():mul(opt.coeff)
         end
 	end

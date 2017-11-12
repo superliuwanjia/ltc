@@ -14,9 +14,8 @@ opt = opts.parse(arg)
 
 local nChannels
 if(opt.stream == 'flow')    then opt.mean =  0; nChannels = 2
-elseif(opt.stream == 'rgb') then opt.mean = 0; nChannels = 1; opt.coeff = 255 end
-if (opt.stream == "diff") then opt.mean = 0; nChannels=3 end
-if (opt.gray) then nChannels=1 end
+elseif(opt.stream == 'rgb' or opt.stream == "diff") then opt.mean = 0; nChannels = 1; opt.coeff = 255 end
+if (opt.gray and opt.stream ~= "flow") then nChannels=1 end
 
 opt.save  			= paths.concat(opt.logRoot, opt.dataset, opt.expName)
 opt.cache 			= paths.concat(opt.logRoot, opt.dataset, 'cache', opt.stream)
