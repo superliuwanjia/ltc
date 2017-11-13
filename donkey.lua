@@ -324,7 +324,7 @@ local testHook = function(self, path, region, hflip)
 	collectgarbage()
 	local input
 
-	if(opt.stream == 'flow' or opt.stream = 'edr') then
+	if(opt.stream == 'flow' or opt.stream == 'edr') then
 		input = loadFlow(path, 'test')
 	else
 		input = loadRGB(path, 'test')

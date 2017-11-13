@@ -26,14 +26,14 @@ else
 
     if opt.stream == "rgb" then
         opt.mean = 96
-    else:
+    else 
         opt.mean = 0
     end
 
     if opt.stream == 'edr' then
-        opt.nChannels = mult * 2
+        nChannels = mult * 2
     else
-        opt.nChannels = mult
+        nChannels = mult
     end
 end
 --if(opt.stream == 'flow')    then opt.mean =  0; nChannels = 2
@@ -43,7 +43,12 @@ end
 opt.save  			= paths.concat(opt.logRoot, opt.dataset, opt.expName)
 opt.cache 			= paths.concat(opt.logRoot, opt.dataset, 'cache', opt.stream)
 opt.data 			= paths.concat(opt.dataRoot, opt.dataset, 'splits', 'split' .. opt.split)
-opt.framesRoot 		= paths.concat(opt.dataRoot, opt.dataset, opt.stream, 't7')
+if (opt.stream ~= 'rgb') then
+    folder = "flow"
+else
+    folder = "rgb"
+end
+opt.framesRoot 		= paths.concat(opt.dataRoot, opt.dataset,folder, 't7')
 opt.forceClasses 	= torch.load(paths.concat(opt.dataRoot, opt.dataset, 'annot/forceClasses.t7'))
 opt.loadSize 		= {nChannels, opt.nFrames, opt.loadHeight, 	 opt.loadWidth}
 opt.sampleSize 		= {nChannels, opt.nFrames, opt.sampleHeight, opt.sampleWidth}
