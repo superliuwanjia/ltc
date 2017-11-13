@@ -13,9 +13,32 @@ local opts = paths.dofile('opts.lua')
 opt = opts.parse(arg)
 
 local nChannels
-if(opt.stream == 'flow')    then opt.mean =  0; nChannels = 2
-elseif(opt.stream == 'rgb' or opt.stream == "diff") then opt.mean = 0; nChannels = 1; opt.coeff = 255 end
-if (opt.gray and opt.stream ~= "flow") then nChannels=1 end
+if opt.stream == 'flow' then
+    opt.mean = 0
+    nChannels = 2
+else
+    opt.coeff = 255
+    if opt.gray then
+        mult = 1
+    else
+        mult = 3
+    end
+
+    if opt.stream == "rgb" then
+        opt.mean = 96
+    else:
+        opt.mean = 0
+    end
+
+    if opt.stream == 'edr' then
+        opt.nChannels = mult * 2
+    else
+        opt.nChannels = mult
+    end
+end
+--if(opt.stream == 'flow')    then opt.mean =  0; nChannels = 2
+--elseif(opt.stream == 'rgb' or opt.stream == "diff") then opt.mean = 0; nChannels = 3; opt.coeff = 255 end
+--if (opt.gray and opt.stream ~= "flow") then nChannels=1 end
 
 opt.save  			= paths.concat(opt.logRoot, opt.dataset, opt.expName)
 opt.cache 			= paths.concat(opt.logRoot, opt.dataset, 'cache', opt.stream)

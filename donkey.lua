@@ -175,20 +175,33 @@ local function loadFlow(path, set)
             --flag_inf = 2
         end
 		-- to-do: if not minmax will be always nil
-		if(opt.minmax) then
-			input[{{1}, {T}, {}, {}}] = (torch.mul(imgx, minmax[{tt, 2}] - minmax[{tt, 1}]) + minmax[{tt, 1}]):mul(opt.coeff*loadSize[4]/iW)
-			input[{{2}, {T}, {}, {}}] = (torch.mul(imgy, minmax[{tt, 4}] - minmax[{tt, 3}]) + minmax[{tt, 3}]):mul(opt.coeff*loadSize[3]/iH)
-		else
-		    input[{{1}, {T}, {}, {}}] = imgx:float():mul(opt.coeff)
-		    input[{{2}, {T}, {}, {}}] = imgy:float():mul(opt.coeff)
+        if opt.gray then
+            if(opt.minmax) then
+                input[{{1}, {T}, {}, {}}] = (torch.mul(imgx, minmax[{tt, 2}] - minmax[{tt, 1}]) + minmax[{tt, 1}]):mul(opt.coeff*loadSize[4]/iW)
+                input[{{2}, {T}, {}, {}}] = (torch.mul(imgy, minmax[{tt, 4}] - minmax[{tt, 3}]) + minmax[{tt, 3}]):mul(opt.coeff*loadSize[3]/iH)
+            else
+                input[{{1}, {T}, {}, {}}] = imgx:float():mul(opt.coeff)
+                input[{{2}, {T}, {}, {}}] = imgy:float():mul(opt.coeff)
+            end
+            if(opt.perframemean) then
+                input[{{1}, {T}, {}, {}}] = input[{{1}, {T}, {}, {}}] - torch.mean(input[{{1}, {T}, {}, {}}]);
+                input[{{2}, {T}, {}, {}}] = input[{{2}, {T}, {}, {}}] - torch.mean(input[{{2}, {T}, {}, {}}]);
+            end
+        else
+            if(opt.minmax) then
+                input[{{1,3}, {T}, {}, {}}] = (torch.mul(imgx, minmax[{tt, 2}] - minmax[{tt, 1}]) + minmax[{tt, 1}]):mul(opt.coeff*loadSize[4]/iW)
+                input[{{4,6}, {T}, {}, {}}] = (torch.mul(imgy, minmax[{tt, 4}] - minmax[{tt, 3}]) + minmax[{tt, 3}]):mul(opt.coeff*loadSize[3]/iH)
+            else
+                input[{{1,3}, {T}, {}, {}}] = imgx:float():mul(opt.coeff)
+                input[{{4,6}, {T}, {}, {}}] = imgy:float():mul(opt.coeff)
+            end
+            if(opt.perframemean) then
+                input[{{1,3}, {T}, {}, {}}] = input[{{1}, {T}, {}, {}}] - torch.mean(input[{{1}, {T}, {}, {}}]);
+                input[{{4,6}, {T}, {}, {}}] = input[{{2}, {T}, {}, {}}] - torch.mean(input[{{2}, {T}, {}, {}}]);
+            end
+
         end
 
-
-
-		if(opt.perframemean) then
-			input[{{1}, {T}, {}, {}}] = input[{{1}, {T}, {}, {}}] - torch.mean(input[{{1}, {T}, {}, {}}]);
-			input[{{2}, {T}, {}, {}}] = input[{{2}, {T}, {}, {}}] - torch.mean(input[{{2}, {T}, {}, {}}]);
-		end
 	end
    
 	-- Pad frames
@@ -215,7 +228,7 @@ local trainHook = function(self, path)
 	collectgarbage()
 	local input
 
-	if(opt.stream == 'flow') then
+	if(opt.stream == 'flow' or opt.stream == "edr") then
 		input = loadFlow(path, 'train')
 	else
 		input = loadRGB(path, 'train')
@@ -257,7 +270,7 @@ local trainHook = function(self, path)
 			out = out_res
 
 			-- multiply the flow by the scale factor
-			if(opt.stream == 'flow') then
+			if(opt.stream == 'flow' or opt.stream == "edr") then
 				out[{{1},{},{},{}}]:mul(sampleSize[4]/oW)
 				out[{{2},{},{},{}}]:mul(sampleSize[3]/oH)
 			end
@@ -311,7 +324,7 @@ local testHook = function(self, path, region, hflip)
 	collectgarbage()
 	local input
 
-	if(opt.stream == 'flow') then
+	if(opt.stream == 'flow' or opt.stream = 'edr') then
 		input = loadFlow(path, 'test')
 	else
 		input = loadRGB(path, 'test')
