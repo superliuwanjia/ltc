@@ -43,7 +43,7 @@ end
 opt.save  			= paths.concat(opt.logRoot, opt.dataset, opt.expName)
 opt.cache 			= paths.concat(opt.logRoot, opt.dataset, 'cache', opt.stream)
 opt.data 			= paths.concat(opt.dataRoot, opt.dataset, 'splits', 'split' .. opt.split)
-if (opt.stream ~= 'rgb') then
+if (opt.stream ~= 'rgb' and opt.stream ~="diff") then
     folder = "flow"
 else
     folder = "rgb"
